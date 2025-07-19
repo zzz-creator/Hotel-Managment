@@ -10,6 +10,7 @@ A comprehensive hotel management system built with Python, featuring:
 - **Database Integration:** Uses SQL Server (configurable via `config.ini`)
 - **Security:** Admin panel with password and user restrictions
 - **Configurable Settings:** Hotel name, tax rate, lockout policy, and more via `config.ini`
+- **Valet System:** Valet system to track cars in your parking lot
 
 ## Getting Started
 
@@ -51,14 +52,5 @@ Edit `config.ini` to set:
 
 - Database connection (`server`, `database`, `username`, `password`)
 - Hotel name, tax rate, lockout policy, etc.
-
-## Features
-
-- **Reservations:** Add, edit, delete, and search for reservations.
-- **Inventory:** Manage hotel items.
-- **User Management:** View and manage users.
-- **Discounts:** Apply and manage discount codes.
-- **Event & Banquet Management:** Book and manage events, seating, equipment, and catering.
-- **Admin Panel:** Secure access for sensitive operations.
 
 **Developed by [zzz-creator](https://github.com/zzz-creator)
