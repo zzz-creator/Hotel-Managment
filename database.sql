@@ -35,3 +35,13 @@ CREATE TABLE Discounts (
     DiscountPercentage DECIMAL(5,2) NOT NULL,
     CreatedAt DATETIME DEFAULT GETDATE()
 );
+CREATE TABLE ValetVehicles (
+    ValetID INT IDENTITY(1,1) PRIMARY KEY,
+    LicensePlate NVARCHAR(20) NOT NULL,
+    OwnerName NVARCHAR(100) NOT NULL,
+    ParkingSpot NVARCHAR(20),
+    Status NVARCHAR(20) DEFAULT 'Checked-In', -- 'Checked-In', 'Checked-Out'
+    CheckInTime DATETIME DEFAULT GETDATE(),
+    CheckOutTime DATETIME NULL,
+    CreatedAt DATETIME DEFAULT GETDATE()
+);

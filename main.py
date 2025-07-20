@@ -1,4 +1,5 @@
 from decimal import Decimal
+# Imports and Configuration
 import logging
 import os
 import sys
@@ -9,6 +10,7 @@ import string
 import getpass
 from datetime import datetime, timedelta
 import configparser
+import ipaddress
 
 # Database connection settings
 config = configparser.ConfigParser()
@@ -37,9 +39,13 @@ logger = logging.getLogger()
 # Apply the custom formatter to all handlers
 for handler in logger.handlers:
     handler.setFormatter(CustomFormatter())
-#Lockout settings: control the lockout mechanism for failed login attempts
 
 
+
+
+## =========================
+# Database Connection & Utilities
+## =========================
 def create_connection():
     try:
         connection_string = (
@@ -63,6 +69,7 @@ def generate_code():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=5))
 
 def display_items():
+
     conn = create_connection()
     if conn is None:
         return
@@ -104,6 +111,9 @@ def display_items():
         except Exception as e:
             logging.error(f"Error getting item choice: {e}")'''
 
+## =========================
+# Reservation Management
+## =========================
 def get_quantity():
     while True:
         try:
@@ -180,7 +190,7 @@ def add_reservation():
                        "INSERT INTO Reservations (RoomNumber, Floor, LastName, FirstName) VALUES (?, ?, ?, ?)",
                        (room_number, room_number, floor, last_name, first_name))
         conn.commit()
-        logging.info(f"Reservation for room {room_number} on floor {floor} added successfully.")
+        logging.info(f"Reservation for room {room_number} on floor {floor} added successfully. Please use view reservations to verify if successful.")
     except Exception as e:
         logging.error(f"Error adding reservation: {e}")
     finally:
@@ -705,6 +715,7 @@ def view_items():
         conn.close()
 
 def admin_panel():
+
     login_successful, role, reauth = admin_login()
 
     if not login_successful and not reauth:
@@ -734,20 +745,24 @@ def admin_panel():
             logging.info("4. View Reservations")
             logging.info("5. Search Reservations")
 
+            logging.info("---- Notifications & Alerts ----")
+            logging.info("6. Send Notification to Customer")
+            logging.info("7. Send Alert to Staff")
+
             logging.info("---- Items ----")
-            logging.info("6. Add Item")
-            logging.info("7. Delete Item")
-            logging.info("8. Update Item")
-            logging.info("9. View Items")
+            logging.info("8. Add Item")
+            logging.info("9. Delete Item")
+            logging.info("10. Update Item")
+            logging.info("11. View Items")
 
             logging.info("---- Users ----")
-            logging.info("10. View Users")  # Managers can view users
+            logging.info("12. View Users")  # Managers can view users
 
             logging.info("---- Discounts ----")
-            logging.info("11. View Discount Codes")
+            logging.info("13. View Discount Codes")
 
             logging.info("---- Other ----")
-            logging.info("12. Exit Admin Panel")
+            logging.info("14. Exit Admin Panel")
 
         elif role == 'admin':
             logging.info("---- Reservations ----")
@@ -757,24 +772,35 @@ def admin_panel():
             logging.info("4. View Reservations")
             logging.info("5. Search Reservations")
 
+            logging.info("---- Notifications & Alerts ----")
+            logging.info("6. Send Notification to Customer")
+            logging.info("7. Send Alert to Staff")
+
             logging.info("---- Items ----")
-            logging.info("6. Add Item")
-            logging.info("7. Delete Item")
-            logging.info("8. Update Item")
-            logging.info("9. View Items")
+            logging.info("8. Add Item")
+            logging.info("9. Delete Item")
+            logging.info("10. Update Item")
+            logging.info("11. View Items")
 
             logging.info("---- Users ----")
-            logging.info("10. Add User")
-            logging.info("11. Delete User")
-            logging.info("12. Edit User")
-            logging.info("13. View Users")
-            logging.info("14. Reset User Password")
+            logging.info("12. Add User")
+            logging.info("13. Delete User")
+            logging.info("14. Edit User")
+            logging.info("15. View Users")
+            logging.info("16. Reset User Password")
 
             logging.info("---- Discounts ----")
-            logging.info("15. Manage Discount Codes")
+            logging.info("17. Manage Discount Codes")
 
             logging.info("---- Other ----")
-            logging.info("16. Exit Admin Panel")
+            logging.info("18. Exit Admin Panel")
+        elif role == 'valet':
+            logging.info("1. Vehicle Management")
+            logging.info("2. Exit Valet Panel")
+            choice = input("Enter your choice: ").strip()
+        elif role == 'it support':
+            logging.info("1. IT Support Functions")
+            logging.info("2. Exit IT Support Panel")
         else:
             logging.error("A role has not been assigned. Please contact the system administrator.")
             break
@@ -808,16 +834,20 @@ def admin_panel():
             elif choice == '5':
                 search_reservations()
             elif choice == '6':
-                add_item()
+                send_notification_to_customer()
             elif choice == '7':
-                delete_item()
+                send_alert_to_staff()
             elif choice == '8':
-                update_item()
+                add_inventory_item()
             elif choice == '9':
-                view_items()
+                edit_inventory_item()
             elif choice == '10':
-                view_users()
+                delete_inventory_item()
             elif choice == '11':
+                view_inventory()
+            elif choice == '12':
+                view_users()
+            elif choice == '13':
                 try:
                     conn = create_connection()
                     if conn is None:
@@ -832,12 +862,11 @@ def admin_panel():
                             logging.info(f"Code: {discount.Code}, Percentage: {discount.DiscountPercentage}%")
                     else:
                         logging.info("No discount codes found.")
-                    
                 except Exception as e:
                     logging.error(f"Error viewing discount codes: {e}")
                 finally:
                     conn.close()
-            elif choice == '12':
+            elif choice == '14':
                 break
             else:
                 logging.info("Invalid choice. Please try again.")
@@ -854,30 +883,193 @@ def admin_panel():
             elif choice == '5':
                 search_reservations()
             elif choice == '6':
-                add_item()
+                send_notification_to_customer()
             elif choice == '7':
-                delete_item()
+                send_alert_to_staff()
             elif choice == '8':
-                update_item()
+                add_inventory_item()
             elif choice == '9':
-                view_items()
+                edit_inventory_item()
             elif choice == '10':
-                add_user()
+                delete_inventory_item()
             elif choice == '11':
-                delete_user()
+                view_inventory()
             elif choice == '12':
-                edit_user()
+                add_user()
             elif choice == '13':
-                view_users()
+                delete_user()
             elif choice == '14':
-                reset_user_password()
+                edit_user()
             elif choice == '15':
-                manage_discount_codes()
+                view_users()
             elif choice == '16':
+                reset_user_password()
+            elif choice == '17':
+                manage_discount_codes()
+            elif choice == '18':
                 break
             else:
                 logging.info("Invalid choice. Please try again.")
-        os.system('pause')
+        elif role == 'valet':
+            while True:
+                if choice == '1':
+                    valet_vehicle_management()
+                elif choice == '2':
+                    break
+                else:
+                    logging.info("Invalid choice. Please try again.")
+        elif role == 'it support':
+            while True:
+                if choice == '1':
+                    it_support_panel()
+                elif choice == '2':
+                    break
+                else:
+                    logging.info("Invalid choice. Please try again.")
+        else:
+            logging.error("404 Role Not Found. Please contact the system administrator.")
+## =========================
+# Inventory Management
+## =========================
+def add_inventory_item():
+    """Add a new inventory item."""
+    try:
+        name = input("Enter inventory item name: ").strip()
+        quantity = int(input("Enter quantity: ").strip())
+        location = input("Enter location: ").strip()
+        conn = create_connection()
+        if conn is None:
+            return
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO Inventory (Name, Quantity, Location) VALUES (?, ?, ?)", (name, quantity, location))
+        conn.commit()
+        logging.info(f"Inventory item '{name}' added successfully.")
+    except Exception as e:
+        logging.error(f"Error adding inventory item: {e}")
+    finally:
+        conn.close()
+
+def edit_inventory_item():
+    """Edit an existing inventory item."""
+    try:
+        item_id = int(input("Enter inventory item ID to edit: ").strip())
+        conn = create_connection()
+        if conn is None:
+            return
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Inventory WHERE ItemID = ?", (item_id,))
+        item = cursor.fetchone()
+        if item:
+            new_name = input("Enter new name (leave blank to keep current): ").strip()
+            new_quantity = input("Enter new quantity (leave blank to keep current): ").strip()
+            new_location = input("Enter new location (leave blank to keep current): ").strip()
+            if new_name == "":
+                new_name = item.Name
+            if new_quantity == "":
+                new_quantity = item.Quantity
+            else:
+                new_quantity = int(new_quantity)
+            if new_location == "":
+                new_location = item.Location
+            cursor.execute("UPDATE Inventory SET Name = ?, Quantity = ?, Location = ? WHERE ItemID = ?", (new_name, new_quantity, new_location, item_id))
+            conn.commit()
+            logging.info(f"Inventory item '{item_id}' updated successfully.")
+        else:
+            logging.info("Inventory item not found.")
+    except Exception as e:
+        logging.error(f"Error editing inventory item: {e}")
+    finally:
+        conn.close()
+
+def delete_inventory_item():
+    """Delete an inventory item."""
+    try:
+        item_id = int(input("Enter inventory item ID to delete: ").strip())
+        conn = create_connection()
+        if conn is None:
+            return
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Inventory WHERE ItemID = ?", (item_id,))
+        conn.commit()
+        logging.info(f"Inventory item '{item_id}' deleted successfully.")
+    except Exception as e:
+        logging.error(f"Error deleting inventory item: {e}")
+    finally:
+        conn.close()
+
+def view_inventory():
+
+    """View all inventory items."""
+    try:
+        conn = create_connection()
+        if conn is None:
+            return
+        cursor = conn.cursor()
+        cursor.execute("SELECT ItemID, Name, Quantity, Location FROM Inventory")
+        rows = cursor.fetchall()
+        logging.info("Inventory Items:")
+        for row in rows:
+            logging.info(f"ID: {row.ItemID}, Name: {row.Name}, Quantity: {row.Quantity}, Location: {row.Location}")
+    except Exception as e:
+        logging.error(f"Error viewing inventory: {e}")
+    finally:
+        conn.close()
+# =========================
+#Notifications & Alerts Management
+# =========================
+def send_notification_to_customer():
+    """Send a notification to a customer (simulated)."""
+    try:
+        while True:
+            room_number = input("Enter customer's room number: ").strip()
+            conn = create_connection()
+            if conn is None:
+                logging.info("Database connection failed.")
+                return
+            cursor = conn.cursor()
+            cursor.execute("SELECT RoomNumber FROM Reservations WHERE RoomNumber = ?", (room_number,))
+            result = cursor.fetchone()
+            conn.close()
+            if result:
+                break
+            else:
+                logging.info("Room number not occupied. Please try again.")
+        message = input("Enter notification message: ").strip()
+        # Simulate sending notification (could be extended to email/SMS)
+        logging.info(f"Notification sent to room {room_number}: {message}")
+    except Exception as e:
+        logging.error(f"Error sending notification: {e}")
+
+def send_alert_to_staff():
+    """Send an alert to staff (simulated)."""
+    try:
+        staff_roles = [
+            "Housekeeping",
+            "Front Desk",
+            "Maintenance",
+            "Security",
+            "Concierge",
+            "Management",
+            "IT Support",
+            "Valet"
+        ]
+        while True:
+            for idx, role in enumerate(staff_roles, 1):
+                logging.info(f"{idx}. {role}")
+            try:
+                choice = int(input("Enter the number of the staff role: ").strip())
+                if 1 <= choice <= len(staff_roles):
+                    selected_role = staff_roles[choice - 1]
+                    break
+                else:
+                    logging.info("Invalid choice. Please try again.")
+            except ValueError:
+                logging.info("Invalid input. Please enter a number.")
+        message = input("Enter alert message: ").strip()
+        # Simulate sending alert (could be extended to email/SMS)
+        logging.info(f"Alert sent to {selected_role} staff: {message}")
+    except Exception as e:
+        logging.error(f"Error sending alert: {e}")
 def manage_discount_codes():
     """Provides a sub-menu for discount code management."""
     conn = create_connection()
@@ -966,6 +1158,7 @@ def manage_discount_codes():
     finally:
         conn.close()
 def reset_user_password():
+
     logging.info("List of Users:")
     view_users()
     """Allow an admin to reset a user's password."""
@@ -989,6 +1182,9 @@ def reset_user_password():
     finally:
         conn.close()
 
+## =========================
+# Billing & Payment
+## =========================
 def luhn_check(card_number):
     """Validate credit card number using Luhn's algorithm."""
     def digits_of(n):
@@ -1038,6 +1234,7 @@ def process_credit_card(total_amount):
     return True
 
 def validate_expiration_date(expiration_date):
+
     """Validate if the credit card expiration date is valid and not expired."""
     try:
         # Parse expiration date
@@ -1061,6 +1258,9 @@ def validate_expiration_date(expiration_date):
     
 
 
+## =========================
+# Customer Panel
+## =========================
 def check_in():
     """Handle customer check-in using validate_room and display amenities."""
     room_number, first_name = validate_room()  # Assume validate_room returns (room_number, first_name)
@@ -1315,6 +1515,143 @@ def contact_concierge():
     logging.info("Your message has been sent. A concierge will get back to you shortly.")
     logging.info("For immediate assistance, please call the front desk at 123-456-7890.")
     logging.info("Your message: " + message)
+def it_support_panel():
+    """IT Support: Unified panel for network config, user account management, diagnostics, and software installation."""
+    while True:
+        logging.info("\n--- IT Support Panel ---")
+        logging.info("1. Network Configuration")
+        logging.info("2. User Account Management")
+        logging.info("3. System Diagnostics")
+        logging.info("4. Software Installation")
+        logging.info("5. Exit IT Support Panel")
+        choice = input("Enter your choice: ").strip()
+        if choice == '1':
+            logging.info("\n--- IT Support: Network Configuration ---")
+            network_name = input("Enter network name: ").strip()
+            ip_address = input("Enter IP address: ").strip()
+            subnet_mask = input("Enter subnet mask: ").strip()
+            gateway = input("Enter gateway: ").strip()
+            logging.info(f"Network '{network_name}' configured with IP {ip_address}, Subnet {subnet_mask}, Gateway {gateway}.")
+            logging.info("Network configuration completed successfully.")
+            choice = input("Do you want to run diagnostics and test the network? (Y/N): ").strip().lower()
+            if choice == 'y':
+                logging.info("Beginning Network Diagnostics and Test...")
+                time.sleep(2)
+                logging.info(f"Network Name: {network_name}")
+                logging.info(f"IP Address: {ip_address}")
+                logging.info(f"Subnet Mask: {subnet_mask}")
+                logging.info(f"Gateway: {gateway}")
+                logging.info("Diagnostics completed successfully. No issues found.")
+            else:
+                logging.info("Skipping diagnostics and test.")
+        elif choice == '2':
+            logging.info("\n--- IT Support: User Account Management ---")
+            action = input("Enter action: A (Add) / RM (Remove) / RP (Reset Password) / U (Update): ").strip().lower()
+            if action == "a":
+                add_user()
+            elif action == "rm":
+                delete_user()
+            elif action == "r":
+                reset_user_password()
+            elif action == "u":
+                edit_user()
+            else:
+                logging.info("Invalid action. Please enter 'add', 'remove', 'reset', or 'update'.")
+        elif choice == '3':
+            logging.info("\n--- IT Support: System Diagnostics ---")
+            systems = ["Server", "Workstation", "POS Terminal", "WiFi Router", "Printer", "Database Server"]
+            logging.info("Available systems for diagnostics:")
+            for idx, sys_name in enumerate(systems, 1):
+                logging.info(f"{idx}. {sys_name}")
+            while True:
+                try:
+                    sys_choice = int(input("Select system to diagnose (number): ").strip())
+                    if 1 <= sys_choice <= len(systems):
+                        system = systems[sys_choice - 1]
+                        break
+                    else:
+                        logging.info("Invalid selection. Please enter a valid number.")
+                except ValueError:
+                    logging.info("Invalid input. Please enter a number.")
+            logging.info(f"Running diagnostics on {system}...")
+            time.sleep(2)
+            logging.info(f"Diagnostics for {system} completed. No issues found.")
+        elif choice == '4':
+            logging.info("\n--- IT Support: Software Installation ---")
+            systems = ["Server", "Workstation", "POS Terminal", "WiFi Router", "Printer", "Database Server"]
+            applications = ["Microsoft Office", "Antivirus", "Hotel Management Suite", "Printer Driver", "Database Client", "Remote Desktop", "Web Browser"]
+            logging.info("Available systems for installation:")
+            for idx, sys_name in enumerate(systems, 1):
+                logging.info(f"{idx}. {sys_name}")
+            while True:
+                try:
+                    sys_choice = int(input("Select system (number): ").strip())
+                    if 1 <= sys_choice <= len(systems):
+                        system = systems[sys_choice - 1]
+                        break
+                    else:
+                        logging.info("Invalid selection. Please enter a valid number.")
+                except ValueError:
+                    logging.info("Invalid input. Please enter a number.")
+            logging.info("Available applications for installation:")
+            for idx, app_name in enumerate(applications, 1):
+                logging.info(f"{idx}. {app_name}")
+            while True:
+                try:
+                    app_choice = int(input("Select application (number): ").strip())
+                    if 1 <= app_choice <= len(applications):
+                        software = applications[app_choice - 1]
+                        break
+                    else:
+                        logging.info("Invalid selection. Please enter a valid number.")
+                except ValueError:
+                    logging.info("Invalid input. Please enter a number.")
+            logging.info(f"Installing {software} on {system}...")
+            time.sleep(2)
+            logging.info(f"{software} installed successfully on {system}.")
+        elif choice == '5':
+            logging.info("Exiting IT Support Panel.")
+            break
+        else:
+            logging.info("Invalid choice. Please try again.")
+
+def valet_vehicle_management():
+    """Valet: Manage vehicle check-in/check-out with database integration."""
+    logging.info("\n--- Valet: Vehicle Management ---")
+    action = input("Enter action: CI (Check In) / CO (Check Out)").strip().lower()
+    license_plate = input("Enter vehicle license plate: ").strip()
+    owner_name = input("Enter owner's name: ").strip()
+    conn = create_connection()
+    if conn is None:
+        logging.info("Database connection failed.")
+        return
+    cursor = conn.cursor()
+    try:
+        if action == "check-in":
+            parking_spot = input("Enter assigned parking spot: ").strip()
+            check_in_time = datetime.now()
+            cursor.execute(
+                "INSERT INTO ValetVehicles (LicensePlate, OwnerName, ParkingSpot, Status, CheckInTime) VALUES (?, ?, ?, ?, ?)",
+                (license_plate, owner_name, parking_spot, "Checked-In", check_in_time)
+            )
+            conn.commit()
+            logging.info(f"Vehicle {license_plate} checked in for {owner_name} at spot {parking_spot}.")
+        elif action == "check-out":
+            check_out_time = datetime.now()
+            cursor.execute(
+                "UPDATE ValetVehicles SET Status = ?, CheckOutTime = ? WHERE LicensePlate = ? AND OwnerName = ? AND Status = 'Checked-In'",
+                ("Checked-Out", check_out_time, license_plate, owner_name)
+            )
+            conn.commit()
+            logging.info(f"Vehicle {license_plate} checked out for {owner_name}.")
+        else:
+            logging.info("Invalid action. Please enter 'check-in' or 'check-out'.")
+    except Exception as e:
+        logging.error(f"Error managing valet vehicle: {e}")
+    finally:
+        conn.close()
+
+   
 def cutomer_panel():
     while True:
         logging.info("\nCustomer Menu:")
@@ -1351,6 +1688,9 @@ def cutomer_panel():
         elif cust_choice == '10':
             break  # Exit the customer menu and return to the main menu
         os.system('pause')
+## =========================
+# Main Entry Point
+## =========================
 def main():
     while True:
         os.system('cls')
@@ -1370,6 +1710,7 @@ def main():
             sys.exit(1)
         else:
             logging.info("Invalid choice. Please try again.")
+
 
 if __name__ == "__main__":
     main()
